@@ -2,15 +2,15 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Gestión Judicial Profesional</title>
+    <title>Gestión Judicial</title>
     <style>
         :root { --primary: #2c3e50; --secondary: #3498db; --success: #27ae60; }
-        body { font-family: 'Segoe UI', sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
+        body { font-family: sans-serif; background-color: #f4f7f6; padding: 20px; }
         .contenedor { max-width: 1200px; margin: auto; }
         .card { background: white; padding: 25px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
         .formulario { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
         .full-width { grid-column: span 3; }
-        input, select, textarea { padding: 10px; border: 1px solid #ddd; border-radius: 5px; width: 100%; }
+        input, textarea { padding: 10px; border: 1px solid #ddd; border-radius: 5px; width: 100%; box-sizing: border-box; }
         button { padding: 12px; background: var(--success); color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th { background-color: var(--primary); color: white; padding: 12px; text-align: left; }
@@ -30,11 +30,7 @@
 
     <div class="card">
         <div class="formulario">
-            <select id="juzgado">
-                <option value="">-- Seleccionar Juzgado --</option>
-                <option>Laboral N°1</option><option>Civil, Comercial y Ambiental N°1</option><option>Familia, Niñez, Adolescencia y Violencia N°1</option>
-                <option>Juzgado de Garantía N° 4</option><option>Multifuero</option><option>STJ</option><option>Juzgado Federal – VM</option>
-            </select>
+            <input type="text" id="juzgado" placeholder="Nombre del Juzgado" class="full-width">
             <input type="text" id="numExpediente" placeholder="N° Expediente">
             <input type="text" id="caratula" placeholder="Carátula">
             <input type="text" id="tipoJuicio" placeholder="Tipo de Juicio">
@@ -46,11 +42,17 @@
         </div>
     </div>
 
-    <input type="text" id="buscador" onkeyup="renderizarTabla()" placeholder="🔍 Buscar por número o carátula..." style="margin-bottom: 15px;">
+    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+        <input type="text" id="buscador" onkeyup="renderizarTabla()" placeholder="🔍 Buscar por número o carátula...">
+        <select id="filtroTiempo" onchange="renderizarTabla()">
+            <option value="todos">Todos los movimientos</option>
+            <option value="90">Últimos 3 meses</option>
+        </select>
+    </div>
 
     <table id="tablaExpedientes">
         <thead>
-            <tr><th>Expediente / Carátula</th><th>Tipo / Estado</th><th>Fecha</th><th>Proveído</th><th>Acciones</th></tr>
+            <tr><th>Juzgado</th><th>Expediente / Carátula</th><th>Tipo / Estado</th><th>Fecha</th><th>Proveído</th><th>Acciones</th></tr>
         </thead>
         <tbody id="cuerpoTabla"></tbody>
     </table>
@@ -79,9 +81,11 @@
             novedades.unshift({ texto: `<b>${nuevo.numero} - ${nuevo.caratula}</b>: ${nuevo.proveido}` });
             expedientes[idEdicion] = nuevo;
             idEdicion = -1;
+            document.getElementById('btnAccion').innerText = "Registrar en Sistema";
         }
         localStorage.setItem('expedientes', JSON.stringify(expedientes));
         localStorage.setItem('novedades', JSON.stringify(novedades.slice(0,5)));
+        limpiarFormulario();
         renderizarTabla();
     }
 
@@ -93,6 +97,7 @@
         expedientes.forEach((e, i) => {
             if(e.numero.toLowerCase().includes(busqueda) || e.caratula.toLowerCase().includes(busqueda)) {
                 cuerpo.innerHTML += `<tr>
+                    <td>${e.juzgado}</td>
                     <td><strong>${e.numero}</strong><br>${e.caratula}</td>
                     <td>${e.tipo}<br>${e.estadoP}</td>
                     <td>${e.fecha}</td>
@@ -116,8 +121,14 @@
         document.getElementById('estadoProcesal').value = e.estadoP;
         document.getElementById('fecha').value = e.fecha;
         document.getElementById('ultimoProveido').value = e.proveido;
+        document.getElementById('actPendiente').value = e.pendiente;
         idEdicion = i;
-        document.getElementById('btnAccion').innerText = "Actualizar";
+        document.getElementById('btnAccion').innerText = "Actualizar Cambios";
+        window.scrollTo(0,0);
+    }
+
+    function limpiarFormulario() {
+        document.querySelectorAll('input, textarea').forEach(i => i.value = "");
     }
 
     renderizarTabla();
