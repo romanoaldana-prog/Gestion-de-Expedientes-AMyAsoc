@@ -2,58 +2,61 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Gestión Judicial</title>
+    <title>Gestión Judicial Pro</title>
     <style>
-        :root { --primary: #2c3e50; --secondary: #3498db; --success: #27ae60; }
-        body { font-family: sans-serif; background-color: #f4f7f6; padding: 20px; }
+        :root { --primary: #2c3e50; --secondary: #3498db; --accent: #e74c3c; --success: #27ae60; }
+        body { font-family: 'Segoe UI', sans-serif; background-color: #f4f7f6; padding: 20px; }
         .contenedor { max-width: 1200px; margin: auto; }
-        .card { background: white; padding: 25px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        .formulario { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
-        .full-width { grid-column: span 3; }
-        input, textarea { padding: 10px; border: 1px solid #ddd; border-radius: 5px; width: 100%; box-sizing: border-box; }
-        button { padding: 12px; background: var(--success); color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .formulario { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        input, textarea, select { padding: 10px; border: 1px solid #ddd; border-radius: 4px; width: 100%; box-sizing: border-box; }
+        button { padding: 10px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        button:hover { opacity: 0.8; }
+        .btn-add { background: var(--success); color: white; }
+        .btn-del { background: var(--accent); color: white; }
+        .btn-edit { background: var(--secondary); color: white; }
+        table { width: 100%; border-collapse: collapse; background: white; margin-top: 10px; }
         th { background-color: var(--primary); color: white; padding: 12px; text-align: left; }
-        td { padding: 12px; border-bottom: 1px solid #eee; }
+        td { padding: 10px; border-bottom: 1px solid #eee; vertical-align: top; }
         .panel-novedades { background: #fff3cd; border-left: 5px solid #ffc107; padding: 15px; margin-bottom: 20px; display: none; }
     </style>
 </head>
 <body>
 
 <div class="contenedor">
-    <h1>Gestión de Expedientes</h1>
+    <h1>Gestor de Expedientes</h1>
 
     <div id="panelNovedades" class="panel-novedades">
-        <h3>🔔 Novedades del día</h3>
+        <h3>🔔 Últimas actualizaciones</h3>
         <ul id="listaNovedades"></ul>
     </div>
 
     <div class="card">
         <div class="formulario">
-            <input type="text" id="juzgado" placeholder="Nombre del Juzgado" class="full-width">
+            <input type="text" id="juzgado" placeholder="Juzgado (Ej: Familia N°1)" style="grid-column: span 3;">
             <input type="text" id="numExpediente" placeholder="N° Expediente">
             <input type="text" id="caratula" placeholder="Carátula">
             <input type="text" id="tipoJuicio" placeholder="Tipo de Juicio">
             <input type="text" id="estadoProcesal" placeholder="Estado Procesal">
             <input type="date" id="fecha">
-            <input type="text" id="ultimoProveido" placeholder="Último Proveído" class="full-width">
-            <textarea id="actPendiente" placeholder="Actividad Pendiente" class="full-width"></textarea>
-            <button onclick="guardarExpediente()" class="full-width" id="btnAccion">Registrar en Sistema</button>
+            <input type="text" id="ultimoProveido" placeholder="Último Proveído" style="grid-column: span 3;">
+            <textarea id="actPendiente" placeholder="Actividad Pendiente" style="grid-column: span 3;"></textarea>
+            <button onclick="guardarExpediente()" class="btn-add" id="btnAccion" style="grid-column: span 3;">Registrar en Sistema</button>
         </div>
     </div>
 
-    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+    <div class="card" style="display: flex; gap: 10px;">
         <input type="text" id="buscador" onkeyup="renderizarTabla()" placeholder="🔍 Buscar por número o carátula...">
         <select id="filtroTiempo" onchange="renderizarTabla()">
-            <option value="todos">Todos los movimientos</option>
+            <option value="todos">Todos los tiempos</option>
+            <option value="30">Último mes</option>
             <option value="90">Últimos 3 meses</option>
+            <option value="180">Últimos 6 meses</option>
         </select>
     </div>
 
     <table id="tablaExpedientes">
-        <thead>
-            <tr><th>Juzgado</th><th>Expediente / Carátula</th><th>Tipo / Estado</th><th>Fecha</th><th>Proveído</th><th>Acciones</th></tr>
-        </thead>
+        <thead><tr><th>Juzgado</th><th>Expediente / Carátula</th><th>Detalle</th><th>Acciones</th></tr></thead>
         <tbody id="cuerpoTabla"></tbody>
     </table>
 </div>
@@ -61,10 +64,11 @@
 <script>
     let expedientes = JSON.parse(localStorage.getItem('expedientes')) || [];
     let novedades = JSON.parse(localStorage.getItem('novedades')) || [];
-    let idEdicion = -1;
+    let idEdicion = -1; // Usamos -1 para indicar que estamos creando uno nuevo
 
     function guardarExpediente() {
         const nuevo = {
+            id: idEdicion === -1 ? Date.now() : idEdicion,
             juzgado: document.getElementById('juzgado').value,
             numero: document.getElementById('numExpediente').value,
             caratula: document.getElementById('caratula').value,
@@ -78,42 +82,28 @@
         if(idEdicion === -1) {
             expedientes.push(nuevo);
         } else {
+            const index = expedientes.findIndex(e => e.id === idEdicion);
             novedades.unshift({ texto: `<b>${nuevo.numero} - ${nuevo.caratula}</b>: ${nuevo.proveido}` });
-            expedientes[idEdicion] = nuevo;
+            expedientes[index] = nuevo;
             idEdicion = -1;
             document.getElementById('btnAccion').innerText = "Registrar en Sistema";
         }
         localStorage.setItem('expedientes', JSON.stringify(expedientes));
-        localStorage.setItem('novedades', JSON.stringify(novedades.slice(0,5)));
-        limpiarFormulario();
+        localStorage.setItem('novedades', JSON.stringify(novedades.slice(0, 5)));
+        limpiar();
         renderizarTabla();
     }
 
-    function renderizarTabla() {
-        const cuerpo = document.getElementById('cuerpoTabla');
-        const busqueda = document.getElementById('buscador').value.toLowerCase();
-        cuerpo.innerHTML = "";
-        
-        expedientes.forEach((e, i) => {
-            if(e.numero.toLowerCase().includes(busqueda) || e.caratula.toLowerCase().includes(busqueda)) {
-                cuerpo.innerHTML += `<tr>
-                    <td>${e.juzgado}</td>
-                    <td><strong>${e.numero}</strong><br>${e.caratula}</td>
-                    <td>${e.tipo}<br>${e.estadoP}</td>
-                    <td>${e.fecha}</td>
-                    <td>${e.proveido}</td>
-                    <td><button onclick="editar(${i})">Editar</button></td>
-                </tr>`;
-            }
-        });
-        if(novedades.length > 0) {
-            document.getElementById('panelNovedades').style.display = "block";
-            document.getElementById('listaNovedades').innerHTML = novedades.map(n => `<li>${n.texto}</li>`).join('');
+    function eliminar(id) {
+        if(confirm("¿Estás seguro de eliminar este expediente?")) {
+            expedientes = expedientes.filter(e => e.id !== id);
+            localStorage.setItem('expedientes', JSON.stringify(expedientes));
+            renderizarTabla();
         }
     }
 
-    function editar(i) {
-        const e = expedientes[i];
+    function editar(id) {
+        const e = expedientes.find(exp => exp.id === id);
         document.getElementById('juzgado').value = e.juzgado;
         document.getElementById('numExpediente').value = e.numero;
         document.getElementById('caratula').value = e.caratula;
@@ -122,15 +112,45 @@
         document.getElementById('fecha').value = e.fecha;
         document.getElementById('ultimoProveido').value = e.proveido;
         document.getElementById('actPendiente').value = e.pendiente;
-        idEdicion = i;
+        idEdicion = id;
         document.getElementById('btnAccion').innerText = "Actualizar Cambios";
-        window.scrollTo(0,0);
+        window.scrollTo(0, 0);
     }
 
-    function limpiarFormulario() {
-        document.querySelectorAll('input, textarea').forEach(i => i.value = "");
+    function renderizarTabla() {
+        const cuerpo = document.getElementById('cuerpoTabla');
+        const busqueda = document.getElementById('buscador').value.toLowerCase();
+        const filtro = document.getElementById('filtroTiempo').value;
+        const hoy = new Date();
+
+        cuerpo.innerHTML = "";
+        
+        let filtrados = expedientes.filter(e => {
+            const coincideBusqueda = e.numero.toLowerCase().includes(busqueda) || e.caratula.toLowerCase().includes(busqueda);
+            const fechaExp = new Date(e.fecha);
+            const difDias = (hoy - fechaExp) / (1000 * 60 * 60 * 24);
+            return coincideBusqueda && (filtro === "todos" || difDias <= parseInt(filtro));
+        });
+
+        filtrados.sort((a, b) => a.juzgado.localeCompare(b.juzgado));
+
+        filtrados.forEach((e) => {
+            cuerpo.innerHTML += `<tr>
+                <td><strong>${e.juzgado}</strong></td>
+                <td><strong>${e.numero}</strong><br>${e.caratula}</td>
+                <td>${e.tipo} - ${e.estadoP}<br><small>${e.proveido}</small></td>
+                <td><button class="btn-del" onclick="eliminar(${e.id})">Eliminar</button> 
+                    <button class="btn-edit" onclick="editar(${e.id})">Editar</button></td>
+            </tr>`;
+        });
+
+        if(novedades.length > 0) {
+            document.getElementById('panelNovedades').style.display = "block";
+            document.getElementById('listaNovedades').innerHTML = novedades.map(n => `<li>${n.texto}</li>`).join('');
+        }
     }
 
+    function limpiar() { document.querySelectorAll('input, textarea').forEach(i => i.value = ""); }
     renderizarTabla();
 </script>
 </body>
